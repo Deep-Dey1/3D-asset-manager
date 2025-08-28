@@ -27,29 +27,10 @@
     {% if models and models.items and models.items|length > 0 %}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {% for model in models.items %}
-            <div class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition {% if model.file_missing %}border-2 border-red-200{% endif %}">
-                <!-- File Missing Warning -->
-                {% if model.file_missing %}
-                <div class="bg-red-50 border-b border-red-200 px-4 py-2">
-                    <div class="flex items-center text-red-600 text-sm">
-                        <i class="fas fa-exclamation-triangle mr-2"></i>
-                        <span>File unavailable - lost during server restart</span>
-                    </div>
-                </div>
-                {% endif %}
-                
+            <div class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
                 <!-- 3D Model Preview -->
                 <div class="h-48 relative">
                     <div id="viewer-{{ model.id }}" class="model-viewer-card">
-                        {% if model.file_missing %}
-                        <div class="flex items-center justify-center h-full bg-red-50">
-                            <div class="text-center">
-                                <div class="text-4xl text-red-400 mb-2">⚠️</div>
-                                <p class="text-red-600 text-sm font-medium">File Missing</p>
-                                <p class="text-red-500 text-xs mt-1">Lost during deployment</p>
-                            </div>
-                        </div>
-                        {% else %}
                         <div class="flex items-center justify-center h-full bg-gray-50">
                             <div class="text-center">
                                 <div class="text-4xl text-gray-400 mb-2">🎨</div>
@@ -60,7 +41,6 @@
                                 </button>
                             </div>
                         </div>
-                        {% endif %}
                     </div>
                 </div>
                 

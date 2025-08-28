@@ -319,33 +319,18 @@
                 console.error('Model failed to load:', modelUrl, event.detail);
                 if (options.onError) options.onError(event.detail);
                 
-                // Check if it's a missing file error
-                fetch(modelUrl)
-                    .then(response => response.json())
-                    .catch(() => ({}))
-                    .then(errorData => {
-                        let errorMessage = 'Failed to load 3D model';
-                        let subMessage = 'Please try refreshing the page';
-                        
-                        if (errorData.error === 'Model file lost during deployment') {
-                            errorMessage = 'Model file unavailable';
-                            subMessage = 'File was lost during server restart - please re-upload';
-                        }
-                        
-                        // Show error message
-                        const errorDiv = document.createElement('div');
-                        errorDiv.className = 'flex items-center justify-center h-full bg-red-50 text-red-600 text-sm';
-                        errorDiv.innerHTML = `
-                            <div class="text-center p-4">
-                                <i class="fas fa-exclamation-triangle text-2xl mb-2 text-red-500"></i>
-                                <div class="font-medium">${errorMessage}</div>
-                                <div class="text-xs mt-1 text-red-400">${subMessage}</div>
-                                ${errorData.filename ? `<div class="text-xs mt-2 text-gray-500">Original: ${errorData.filename}</div>` : ''}
-                            </div>
-                        `;
-                        container.innerHTML = '';
-                        container.appendChild(errorDiv);
-                    });
+                // Show error message
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'flex items-center justify-center h-full bg-red-50 text-red-600 text-sm';
+                errorDiv.innerHTML = `
+                    <div class="text-center">
+                        <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+                        <div>Failed to load 3D model</div>
+                        <div class="text-xs mt-1">Please try refreshing the page</div>
+                    </div>
+                `;
+                container.innerHTML = '';
+                container.appendChild(errorDiv);
             });
             
             // Add model info overlay if requested

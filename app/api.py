@@ -93,17 +93,7 @@ def download_model(model_id):
         file_path = os.path.join(upload_folder, model.filename)
         
         if not os.path.exists(file_path):
-            # Mark model as file missing and return appropriate error
-            print(f"Model file missing for download: {file_path} for model ID: {model_id}")
-            model.file_missing = True
-            db.session.commit()
-            
-            return jsonify({
-                'error': 'Model file lost during deployment', 
-                'message': 'This model was uploaded before a server restart and the file is no longer available for download. Please contact the model owner to re-upload.',
-                'model_id': model_id,
-                'filename': model.original_filename
-            }), 404
+            return jsonify({'error': 'File not found on server'}), 404
         
         # Increment download count
         model.downloads += 1
@@ -134,24 +124,12 @@ def view_model(model_id):
         # Ensure upload folder exists
         upload_folder = current_app.config['UPLOAD_FOLDER']
         if not os.path.exists(upload_folder):
-            os.makedirs(upload_folder, exist_ok=True)
+            return jsonify({'error': 'Upload folder not found'}), 404
         
         file_path = os.path.join(upload_folder, model.filename)
         
         if not os.path.exists(file_path):
-            # Mark model as file missing and return appropriate error
-            print(f"Model file missing: {file_path} for model ID: {model_id}")
-            
-            # Update model status to indicate file is missing
-            model.file_missing = True
-            db.session.commit()
-            
-            return jsonify({
-                'error': 'Model file lost during deployment', 
-                'message': 'This model was uploaded before a server restart and the file is no longer available. Please re-upload the model.',
-                'model_id': model_id,
-                'filename': model.original_filename
-            }), 404
+            return jsonify({'error': 'File not found on server'}), 404
         
         # Determine MIME type based on file extension
         file_extension = model.file_extension.lower()

@@ -14,40 +14,8 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <!-- Enhanced 3D Model Preview -->
-        <div class="bg-white rounded-lg shadow-lg p-6 {% if model.file_missing %}border-2 border-red-200{% endif %}">
-            <!-- File Missing Warning -->
-            {% if model.file_missing %}
-            <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                <div class="flex items-start">
-                    <i class="fas fa-exclamation-triangle text-red-500 mt-1 mr-3"></i>
-                    <div>
-                        <h4 class="font-medium text-red-800">Model File Unavailable</h4>
-                        <p class="text-red-600 text-sm mt-1">
-                            This model file was lost during a server restart. The file needs to be re-uploaded to restore 3D preview functionality.
-                        </p>
-                        {% if current_user.is_authenticated and current_user.id == model.user_id %}
-                        <div class="mt-3">
-                            <a href="{{ url_for('main.upload') }}" 
-                               class="bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700 transition">
-                                <i class="fas fa-upload mr-1"></i>Re-upload Model
-                            </a>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-            
+        <div class="bg-white rounded-lg shadow-lg p-6">
             <div id="viewer-detail-{{ model.id }}" class="model-viewer-large">
-                {% if model.file_missing %}
-                <div class="flex items-center justify-center h-full bg-red-50">
-                    <div class="text-center">
-                        <div class="text-6xl text-red-400 mb-4">⚠️</div>
-                        <p class="text-red-600 font-medium mb-2">File Missing</p>
-                        <p class="text-red-500 text-sm">Lost during server deployment</p>
-                    </div>
-                </div>
-                {% else %}
                 <div class="flex items-center justify-center h-full bg-gray-50">
                     <div class="text-center">
                         <div class="text-6xl text-gray-400 mb-4">🎨</div>
@@ -58,7 +26,6 @@
                         </button>
                     </div>
                 </div>
-                {% endif %}
             </div>
             
             <!-- Viewer Controls -->
@@ -75,18 +42,11 @@
             </div>
             
             <!-- Download Button -->
-            {% if model.file_missing %}
-            <div class="w-full bg-gray-400 text-white py-3 px-6 rounded-lg mt-4 flex items-center justify-center cursor-not-allowed">
-                <i class="fas fa-ban mr-2"></i>
-                Download Unavailable - File Missing
-            </div>
-            {% else %}
             <a href="{{ url_for('api.download_model', model_id=model.id) }}" 
                class="w-full bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition flex items-center justify-center mt-4">
                 <i class="fas fa-download mr-2"></i>
                 Download Model ({{ "%.2f"|format(model.file_size / 1024 / 1024) }} MB)
             </a>
-            {% endif %}
         </div>
 
         <!-- Model Details -->
