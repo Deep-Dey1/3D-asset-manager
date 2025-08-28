@@ -60,15 +60,35 @@ A professional Python Flask web application for managing 3D models with upload/d
    railway variables set SECRET_KEY=your-secret-key-here
    railway variables set FLASK_ENV=production
    railway variables set DATABASE_URL=your-postgresql-url
+   railway variables set RAILWAY_ENVIRONMENT=production
+   railway variables set UPLOAD_PATH=/app/uploads
    ```
 
-4. **Deploy**:
+4. **Configure Persistent Storage**:
+   - In Railway dashboard, go to your service
+   - Navigate to "Variables" tab
+   - Add a Volume mount:
+     - **Mount Path**: `/app/uploads`
+     - **Size**: 5GB (or as needed)
+   - This ensures uploaded 3D models persist across deployments
+
+5. **Deploy**:
    ```bash
    railway up
    ```
 
+### Important: File Storage on Railway
+
+**Problem**: By default, uploaded files are stored locally and get wiped on each deployment.
+
+**Solution**: The app now uses Railway Volumes for persistent storage:
+- ✅ Database records persist (PostgreSQL)
+- ✅ Uploaded files persist (Railway Volume at `/app/uploads`)
+- ✅ Models remain downloadable after restarts/deployments
+
 ### Railway Configuration Files
 
+- `railway.toml`: Railway-specific configuration with volume mounting
 - `Procfile`: Defines how to run the app
 - `runtime.txt`: Specifies Python version
 - `requirements.txt`: Lists all dependencies

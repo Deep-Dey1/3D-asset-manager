@@ -17,6 +17,10 @@ def create_app():
     login_manager.login_message = 'Please log in to access this page.'
     login_manager.login_message_category = 'info'
     
+    # Initialize storage for persistent file handling
+    from app.storage import init_storage
+    init_storage(app)
+    
     # User loader
     from app.models import User
     @login_manager.user_loader

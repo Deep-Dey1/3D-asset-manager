@@ -41,9 +41,22 @@ def upload_model():
         file_extension = get_file_extension(original_filename)
         unique_filename = f"{uuid.uuid4().hex}.{file_extension}"
         
+        # Ensure upload folder exists
+        upload_folder = current_app.config['UPLOAD_FOLDER']
+        os.makedirs(upload_folder, exist_ok=True)
+        
         # Save file
-        file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], unique_filename)
+        file_path = os.path.join(upload_folder, unique_filename)
+        
+        print(f"Saving file to: {file_path}")
+        print(f"Upload folder: {upload_folder}")
+        print(f"Railway environment: {os.environ.get('RAILWAY_ENVIRONMENT', 'development')}")
+        
         file.save(file_path)
+        
+        # Verify file was saved
+        if not os.path.exists(file_path):
+            return jsonify({'error': 'Failed to save file to server'}), 500
         
         # Get file size
         file_size = os.path.getsize(file_path)
@@ -93,7 +106,11 @@ def download_model(model_id):
         file_path = os.path.join(upload_folder, model.filename)
         
         if not os.path.exists(file_path):
-            return jsonify({'error': 'File not found on server'}), 404
+            print(f"Download: File not found at path: {file_path}")
+            print(f"Upload folder: {upload_folder}")
+            print(f"Model filename: {model.filename}")
+            print(f"Files in upload folder: {os.listdir(upload_folder) if os.path.exists(upload_folder) else 'Upload folder does not exist'}")
+            return jsonify({'error': 'File not found on server - may have been lost during deployment'}), 404
         
         # Increment download count
         model.downloads += 1
@@ -129,7 +146,11 @@ def view_model(model_id):
         file_path = os.path.join(upload_folder, model.filename)
         
         if not os.path.exists(file_path):
-            return jsonify({'error': 'File not found on server'}), 404
+            print(f"View: File not found at path: {file_path}")
+            print(f"Upload folder: {upload_folder}")
+            print(f"Model filename: {model.filename}")
+            print(f"Files in upload folder: {os.listdir(upload_folder) if os.path.exists(upload_folder) else 'Upload folder does not exist'}")
+            return jsonify({'error': 'File not found on server - may have been lost during deployment'}), 404
         
         # Determine MIME type based on file extension
         file_extension = model.file_extension.lower()
