@@ -30,14 +30,14 @@
             <div class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
                 <!-- 3D Model Preview -->
                 <div class="h-48 relative">
-                    <div id="viewer-{{ model.id }}" class="model-viewer">
-                        <div class="viewer-loading">
+                    <div id="viewer-{{ model.id }}" class="model-viewer-card">
+                        <div class="flex items-center justify-center h-full bg-gray-50">
                             <div class="text-center">
                                 <div class="text-4xl text-gray-400 mb-2">🎨</div>
                                 <p class="text-gray-600 text-sm">{{ model.file_format.upper() }} Model</p>
                                 <button onclick="load3DModel('{{ model.id }}')" 
-                                        class="mt-2 bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700">
-                                    Load 3D Preview
+                                        class="mt-2 bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700 transition">
+                                    <i class="fas fa-cube mr-1"></i>Load 3D Preview
                                 </button>
                             </div>
                         </div>
@@ -148,26 +148,34 @@ function load3DModel(modelId) {
     if (loadedViewers.has(modelId)) return;
     
     loadedViewers.add(modelId);
-    const container = document.getElementById(`viewer-${modelId}`);
     
     try {
-        createModelViewer(`viewer-${modelId}`, modelId, {
-            width: container.clientWidth,
-            height: container.clientHeight
+        // Use the new model-viewer web component
+        createCardModelViewer(`viewer-${modelId}`, modelId, {
+            id: modelId,
+            name: 'Model ' + modelId
         });
     } catch (error) {
         console.error('Failed to load 3D model:', error);
-        container.innerHTML = '<div class="viewer-error"><div class="text-2xl">⚠️</div><div class="text-xs">Preview not available</div></div>';
+        const container = document.getElementById(`viewer-${modelId}`);
+        container.innerHTML = `
+            <div class="flex items-center justify-center h-full bg-red-50 text-red-600">
+                <div class="text-center">
+                    <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+                    <div class="text-xs">Preview not available</div>
+                </div>
+            </div>
+        `;
     }
 }
 
-// Auto-load first 4 models on page load
+// Auto-load first 6 models on page load for better user experience
 document.addEventListener('DOMContentLoaded', function() {
     const viewers = document.querySelectorAll('[id^="viewer-"]');
     viewers.forEach((viewer, index) => {
-        if (index < 4) { // Only auto-load first 4 to avoid performance issues
+        if (index < 6) { // Auto-load first 6 models
             const modelId = viewer.id.replace('viewer-', '');
-            setTimeout(() => load3DModel(modelId), index * 500);
+            setTimeout(() => load3DModel(modelId), index * 300); // Faster loading
         }
     });
 });

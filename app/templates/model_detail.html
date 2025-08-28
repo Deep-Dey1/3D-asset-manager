@@ -15,14 +15,14 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <!-- Enhanced 3D Model Preview -->
         <div class="bg-white rounded-lg shadow-lg p-6">
-            <div id="viewer-detail-{{ model.id }}" class="model-viewer model-viewer-large">
-                <div class="viewer-loading">
+            <div id="viewer-detail-{{ model.id }}" class="model-viewer-large">
+                <div class="flex items-center justify-center h-full bg-gray-50">
                     <div class="text-center">
                         <div class="text-6xl text-gray-400 mb-4">🎨</div>
                         <p class="text-gray-600 mb-4">{{ model.file_format.upper() }} 3D Model</p>
                         <button onclick="loadDetailModel('{{ model.id }}')" 
                                 class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition">
-                            Load 3D Preview
+                            <i class="fas fa-cube mr-2"></i>Load 3D Preview
                         </button>
                     </div>
                 </div>
@@ -31,19 +31,21 @@
             <!-- Viewer Controls -->
             <div class="mt-4 flex justify-between items-center">
                 <div class="text-sm text-gray-600">
-                    🖱️ Drag to rotate • 🖲️ Scroll to zoom • Right-click drag to pan
+                    <i class="fas fa-mouse text-blue-500 mr-1"></i>Drag to rotate • 
+                    <i class="fas fa-scroll text-green-500 mr-1"></i>Scroll to zoom • 
+                    <i class="fas fa-hand-paper text-purple-500 mr-1"></i>Touch controls
                 </div>
-                <button onclick="resetCamera()" 
+                <button onclick="resetDetailCamera()" 
                         class="text-blue-600 hover:text-blue-800 text-sm">
-                    Reset View
+                    <i class="fas fa-home mr-1"></i>Reset View
                 </button>
             </div>
             
             <!-- Download Button -->
             <a href="{{ url_for('api.download_model', model_id=model.id) }}" 
                class="w-full bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition flex items-center justify-center mt-4">
-                <span class="mr-2">⬇️</span>
-                Download Model
+                <i class="fas fa-download mr-2"></i>
+                Download Model ({{ "%.2f"|format(model.file_size / 1024 / 1024) }} MB)
             </a>
         </div>
 
@@ -146,28 +148,44 @@ function loadDetailModel(modelId) {
     if (!container) return;
     
     try {
-        detailViewer = createModelViewer(`viewer-detail-${modelId}`, modelId, {
-            width: container.clientWidth,
-            height: container.clientHeight,
-            backgroundColor: 0xf8f9fa
+        // Use the new model-viewer web component for detail view
+        detailViewer = createDetailedModelViewer(`viewer-detail-${modelId}`, modelId, {
+            name: '{{ model.name }}',
+            description: '{{ model.description }}',
+            format: '{{ model.file_format }}'
         });
+        
+        console.log('Detail model viewer created successfully');
     } catch (error) {
         console.error('Failed to load 3D model:', error);
-        container.innerHTML = '<div class="viewer-error"><div class="text-4xl mb-2">⚠️</div><div>Failed to load 3D preview</div><div class="text-sm mt-2">Model file may be corrupted or unsupported</div></div>';
+        container.innerHTML = `
+            <div class="flex items-center justify-center h-full bg-red-50 text-red-600">
+                <div class="text-center">
+                    <i class="fas fa-exclamation-triangle text-4xl mb-4"></i>
+                    <div class="text-lg mb-2">Failed to load 3D preview</div>
+                    <div class="text-sm">Model file may be corrupted or in an unsupported format</div>
+                    <div class="text-xs mt-2 text-gray-500">Supported formats: GLB, GLTF, OBJ, FBX</div>
+                </div>
+            </div>
+        `;
     }
 }
 
-function resetCamera() {
-    if (detailViewer && detailViewer.camera && detailViewer.controls) {
-        detailViewer.camera.position.set(0, 0, 3);
-        detailViewer.controls.target.set(0, 0, 0);
-        detailViewer.controls.update();
+function resetDetailCamera() {
+    const container = document.getElementById('viewer-detail-{{ model.id }}');
+    const modelViewer = container?.querySelector('model-viewer');
+    if (modelViewer) {
+        modelViewer.resetTurntableRotation();
+        modelViewer.jumpCameraToGoal();
     }
 }
 
 // Auto-load the model on page load
 document.addEventListener('DOMContentLoaded', function() {
-    loadDetailModel('{{ model.id }}');
+    // Small delay to ensure model-viewer is ready
+    setTimeout(() => {
+        loadDetailModel('{{ model.id }}');
+    }, 500);
 });
 
 </script>
