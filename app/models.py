@@ -47,6 +47,16 @@ class Model3D(db.Model):
     # Foreign key
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     
+    @property
+    def file_format(self):
+        """Return file extension as file_format for template compatibility"""
+        return self.file_extension
+    
+    @property  
+    def user(self):
+        """Return the owner for template compatibility"""
+        return self.owner
+    
     def to_dict(self):
         return {
             'id': self.id,
@@ -56,14 +66,15 @@ class Model3D(db.Model):
             'original_filename': self.original_filename,
             'file_size': self.file_size,
             'file_extension': self.file_extension,
+            'file_format': self.file_format,  # Include both for compatibility
             'upload_date': self.upload_date.isoformat() if self.upload_date else None,
             'downloads': self.downloads,
             'is_public': self.is_public,
-            'owner': {
-                'id': self.owner.id,
-                'username': self.owner.username,
-                'full_name': self.owner.full_name
-            }
+            'user': {
+                'id': self.user.id,
+                'username': self.user.username,
+                'full_name': self.user.full_name
+            } if self.user else None
         }
     
     def get_file_size_formatted(self):

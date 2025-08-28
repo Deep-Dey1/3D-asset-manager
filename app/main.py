@@ -139,4 +139,17 @@ def debug():
 @main_bp.route('/profile')
 @login_required
 def profile():
-    return render_template('profile.html')
+    """User profile page with error handling"""
+    try:
+        user_models = Model3D.query.filter_by(user_id=current_user.id).order_by(Model3D.upload_date.desc()).all()
+        total_downloads = sum(model.downloads for model in user_models) if user_models else 0
+        
+        return render_template('profile.html', 
+                             user_models=user_models,
+                             total_downloads=total_downloads)
+    except Exception as e:
+        print(f"Profile error: {e}")
+        return render_template('profile.html', 
+                             user_models=[],
+                             total_downloads=0,
+                             error=str(e))

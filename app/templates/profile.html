@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Profile - 3D Asset Manager{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+        <!-- Profile Header -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <div class="flex items-center space-x-4">
+                <div class="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                    {{ current_user.full_name[0].upper() if current_user.full_name else current_user.username[0].upper() }}
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">{{ current_user.full_name or current_user.username }}</h1>
+                    <p class="text-gray-600">@{{ current_user.username }}</p>
+                    <p class="text-gray-500">{{ current_user.email }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div class="bg-white rounded-lg shadow p-6 text-center">
+                <div class="text-3xl font-bold text-blue-600">{{ user_models|length if user_models else 0 }}</div>
+                <div class="text-gray-600">Total Models</div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6 text-center">
+                <div class="text-3xl font-bold text-green-600">{{ total_downloads or 0 }}</div>
+                <div class="text-gray-600">Total Downloads</div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6 text-center">
+                <div class="text-3xl font-bold text-purple-600">{{ current_user.created_at.strftime('%Y') if current_user.created_at else 'N/A' }}</div>
+                <div class="text-gray-600">Member Since</div>
+            </div>
+        </div>
+
+        <!-- Account Information -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">Account Information</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                    <div class="p-3 bg-gray-50 rounded border">{{ current_user.full_name or 'Not provided' }}</div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                    <div class="p-3 bg-gray-50 rounded border">{{ current_user.username }}</div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <div class="p-3 bg-gray-50 rounded border">{{ current_user.email }}</div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Member Since</label>
+                    <div class="p-3 bg-gray-50 rounded border">
+                        {{ current_user.created_at.strftime('%B %d, %Y') if current_user.created_at else 'Unknown' }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Models -->
+        {% if user_models %}
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-gray-800">Recent Models</h2>
+                <a href="{{ url_for('main.dashboard') }}" class="text-blue-600 hover:text-blue-800">View All</a>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for model in user_models[:6] %}
+                <div class="border rounded-lg p-4 hover:shadow-md transition">
+                    <h3 class="font-semibold text-gray-800 mb-2 truncate">{{ model.name }}</h3>
+                    <div class="flex justify-between items-center text-sm text-gray-600 mb-2">
+                        <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+                            {{ model.file_format.upper() }}
+                        </span>
+                        <span>{{ model.downloads }} downloads</span>
+                    </div>
+                    <p class="text-gray-600 text-sm">
+                        Uploaded {{ model.upload_date.strftime('%m/%d/%Y') if model.upload_date else 'Unknown' }}
+                    </p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <div class="bg-white rounded-lg shadow-lg p-6 text-center">
+            <div class="text-6xl text-gray-300 mb-4">📦</div>
+            <h2 class="text-xl font-bold text-gray-600 mb-2">No Models Yet</h2>
+            <p class="text-gray-500 mb-4">Start by uploading your first 3D model!</p>
+            <a href="{{ url_for('main.dashboard') }}" 
+               class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition inline-block">
+                Upload Your First Model
+            </a>
+        </div>
+        {% endif %}
+
+        <!-- Actions -->
+        <div class="mt-6 flex space-x-4">
+            <a href="{{ url_for('main.dashboard') }}" 
+               class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition">
+                Go to Dashboard
+            </a>
+            <a href="{{ url_for('auth.logout') }}" 
+               class="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition">
+                Logout
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
