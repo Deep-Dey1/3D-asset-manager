@@ -46,29 +46,53 @@
         <h2 class="text-3xl font-bold text-center mb-12">Powerful Features</h2>
         <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             <div class="text-center group">
-                <div class="bg-gradient-to-br from-indigo-100 to-indigo-200 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 transform group-hover:scale-110 transition duration-300 shadow-lg">
-                    <i class="fas fa-cloud-upload-alt text-3xl text-indigo-600"></i>
+                <div class="bg-gradient-to-br from-indigo-100 to-indigo-200 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 transform group-hover:scale-110 transition duration-300 shadow-lg feature-icon-container upload-diagram">
+                    <!-- Upload Diagram: Computer with Upload Arrow -->
+                    <svg viewBox="0 0 24 24" class="w-8 h-8 text-indigo-600" fill="currentColor">
+                        <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                        <path d="M12,11L16,15H13V19H11V15H8L12,11Z" fill="#4f46e5" opacity="0.8"/>
+                    </svg>
                 </div>
                 <h3 class="text-lg font-semibold mb-2 text-indigo-700">Easy Upload</h3>
                 <p class="text-gray-600">Drag and drop your 3D models with instant processing</p>
             </div>
             <div class="text-center group">
-                <div class="bg-gradient-to-br from-green-100 to-green-200 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 transform group-hover:scale-110 transition duration-300 shadow-lg">
-                    <i class="fas fa-rocket text-3xl text-green-600"></i>
+                <div class="bg-gradient-to-br from-green-100 to-green-200 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 transform group-hover:scale-110 transition duration-300 shadow-lg feature-icon-container download-diagram">
+                    <!-- Download Diagram: Cloud with Download Arrow -->
+                    <svg viewBox="0 0 24 24" class="w-8 h-8 text-green-600" fill="currentColor">
+                        <path d="M17,13L12,18L7,13H10V9H14V13M19.35,10.03C18.67,6.59 15.64,4 12,4C9.11,4 6.6,5.64 5.35,8.03C2.34,8.36 0,10.9 0,14A6,6 0 0,0 6,20H19A5,5 0 0,0 24,15C24,12.36 21.95,10.22 19.35,10.03Z"/>
+                        <path d="M12,13L16,17H13V21H11V17H8L12,13Z" fill="#10b981" opacity="0.9"/>
+                    </svg>
                 </div>
                 <h3 class="text-lg font-semibold mb-2 text-green-700">Fast Download</h3>
                 <p class="text-gray-600">Download models instantly via web or API</p>
             </div>
             <div class="text-center group">
-                <div class="bg-gradient-to-br from-purple-100 to-purple-200 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 transform group-hover:scale-110 transition duration-300 shadow-lg">
-                    <i class="fas fa-code-branch text-3xl text-purple-600"></i>
+                <div class="bg-gradient-to-br from-purple-100 to-purple-200 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 transform group-hover:scale-110 transition duration-300 shadow-lg feature-icon-container api-diagram">
+                    <!-- API Diagram: Connected Nodes Network -->
+                    <svg viewBox="0 0 24 24" class="w-8 h-8 text-purple-600" fill="currentColor">
+                        <path d="M12,2A2,2 0 0,1 14,4A2,2 0 0,1 12,6A2,2 0 0,1 10,4A2,2 0 0,1 12,2M21,9V7L15,1H5C3.89,1 3,1.89 3,3V21A2,2 0 0,0 5,23H19A2,2 0 0,0 21,21V9M19,9H14V4H19V9M12,13L8,17H11V21H13V17H16L12,13Z"/>
+                        <circle cx="6" cy="6" r="1.5" fill="#8b5cf6" opacity="0.7"/>
+                        <circle cx="18" cy="6" r="1.5" fill="#8b5cf6" opacity="0.7"/>
+                        <circle cx="6" cy="18" r="1.5" fill="#8b5cf6" opacity="0.7"/>
+                        <circle cx="18" cy="18" r="1.5" fill="#8b5cf6" opacity="0.7"/>
+                        <line x1="6" y1="6" x2="18" y2="6" stroke="#8b5cf6" stroke-width="0.5" opacity="0.5"/>
+                        <line x1="6" y1="18" x2="18" y2="18" stroke="#8b5cf6" stroke-width="0.5" opacity="0.5"/>
+                        <line x1="6" y1="6" x2="6" y2="18" stroke="#8b5cf6" stroke-width="0.5" opacity="0.5"/>
+                        <line x1="18" y1="6" x2="18" y2="18" stroke="#8b5cf6" stroke-width="0.5" opacity="0.5"/>
+                    </svg>
                 </div>
                 <h3 class="text-lg font-semibold mb-2 text-purple-700">RESTful API</h3>
                 <p class="text-gray-600">Full API access for developers and integrations</p>
             </div>
             <div class="text-center group">
-                <div class="bg-gradient-to-br from-orange-100 to-orange-200 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 transform group-hover:scale-110 transition duration-300 shadow-lg">
-                    <i class="fas fa-lock text-3xl text-orange-600"></i>
+                <div class="bg-gradient-to-br from-orange-100 to-orange-200 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 transform group-hover:scale-110 transition duration-300 shadow-lg feature-icon-container security-diagram">
+                    <!-- Security Diagram: Shield with Lock -->
+                    <svg viewBox="0 0 24 24" class="w-8 h-8 text-orange-600" fill="currentColor">
+                        <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11H16V18H8V11H9.2V10C9.2,8.6 10.6,7 12,7M12,8.2C11.2,8.2 10.4,8.7 10.4,10V11H13.6V10C13.6,8.7 12.8,8.2 12,8.2Z"/>
+                        <circle cx="12" cy="14.5" r="1.5" fill="#f59e0b" opacity="0.8"/>
+                        <rect x="11" y="15.5" width="2" height="1" fill="#f59e0b" opacity="0.8"/>
+                    </svg>
                 </div>
                 <h3 class="text-lg font-semibold mb-2 text-orange-700">Secure Storage</h3>
                 <p class="text-gray-600">Your models are safely stored with privacy controls</p>
