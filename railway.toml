@@ -2,7 +2,8 @@
 builder = "NIXPACKS"
 
 [deploy]
-startCommand = "python app.py"
+# Primary startup command - try wsgi.py first
+startCommand = "python wsgi.py"
 healthcheckPath = "/"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
@@ -11,10 +12,11 @@ restartPolicyMaxRetries = 10
 [experimental]
 incrementalBuild = true
 
-# Persistent volume for file uploads
+# Persistent volume for file uploads (attach to main Flask app service)
 [[volumes]]
 mountPath = "/app/data"
 name = "3d-assets-storage"
 
 [env]
 UPLOAD_PATH = "/app/data/uploads"
+RAILWAY_ENVIRONMENT = "production"
