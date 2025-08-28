@@ -44,6 +44,11 @@ class Model3D(db.Model):
     downloads = db.Column(db.Integer, default=0)
     is_public = db.Column(db.Boolean, default=True)
     
+    # Cloudinary integration
+    cloudinary_public_id = db.Column(db.String(255), nullable=True)  # Cloudinary public ID
+    cloudinary_url = db.Column(db.String(500), nullable=True)  # Cloudinary secure URL
+    storage_type = db.Column(db.String(20), default='local')  # 'local' or 'cloudinary'
+    
     # Foreign key
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     
@@ -70,6 +75,9 @@ class Model3D(db.Model):
             'upload_date': self.upload_date.isoformat() if self.upload_date else None,
             'downloads': self.downloads,
             'is_public': self.is_public,
+            'storage_type': self.storage_type,
+            'cloudinary_public_id': self.cloudinary_public_id,
+            'cloudinary_url': self.cloudinary_url,
             'user': {
                 'id': self.user.id,
                 'username': self.user.username,

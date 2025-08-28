@@ -1,10 +1,12 @@
 import os
 import uuid
-from flask import Blueprint, request, jsonify, send_file, current_app
+import tempfile
+from flask import Blueprint, request, jsonify, send_file, current_app, redirect
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from app import db
 from app.models import Model3D, User
+from app.cloudinary_service import cloudinary_service
 
 api_bp = Blueprint('api', __name__)
 
@@ -36,40 +38,51 @@ def upload_model():
         if not name:
             name = file.filename.rsplit('.', 1)[0]
         
-        # Generate unique filename
+        # Create database record first to get model ID
         original_filename = secure_filename(file.filename)
         file_extension = get_file_extension(original_filename)
-        unique_filename = f"{uuid.uuid4().hex}.{file_extension}"
         
-        # Save file
-        file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], unique_filename)
-        file.save(file_path)
-        
-        # Get file size
-        file_size = os.path.getsize(file_path)
-        
-        # Create database record
+        # Create initial database record
         model = Model3D(
             name=name,
             description=description,
-            filename=unique_filename,
+            filename=original_filename,  # Will update after Cloudinary upload
             original_filename=original_filename,
-            file_size=file_size,
+            file_size=0,  # Will update after upload
             file_extension=file_extension,
             is_public=is_public,
-            user_id=current_user.id
+            user_id=current_user.id,
+            storage_type='cloudinary'
         )
         
         db.session.add(model)
+        db.session.flush()  # Get the ID without committing
+        
+        # Upload to Cloudinary
+        file.seek(0)  # Reset file pointer
+        upload_result = cloudinary_service.upload_model(file, original_filename, model.id)
+        
+        if not upload_result['success']:
+            db.session.rollback()
+            return jsonify({'error': f'Upload failed: {upload_result["error"]}'}), 500
+        
+        # Update model with Cloudinary details
+        model.cloudinary_public_id = upload_result['public_id']
+        model.cloudinary_url = upload_result['secure_url']
+        model.file_size = upload_result['bytes']
+        model.filename = upload_result['public_id']  # Use public_id as filename
+        
         db.session.commit()
         
         return jsonify({
-            'message': 'File uploaded successfully',
-            'model': model.to_dict()
+            'message': 'File uploaded successfully to Cloudinary',
+            'model': model.to_dict(),
+            'cloudinary_url': upload_result['secure_url']
         }), 201
         
     except Exception as e:
         db.session.rollback()
+        print(f"Upload error: {e}")
         return jsonify({'error': str(e)}), 500
 
 @api_bp.route('/download/<int:model_id>')
@@ -85,7 +98,16 @@ def download_model(model_id):
             if not current_user.is_authenticated or model.user_id != current_user.id:
                 return jsonify({'error': 'Access denied'}), 403
         
-        # Ensure upload folder exists
+        # Handle Cloudinary storage
+        if model.storage_type == 'cloudinary' and model.cloudinary_url:
+            # Increment download count
+            model.downloads += 1
+            db.session.commit()
+            
+            # Redirect to Cloudinary URL for download
+            return redirect(model.cloudinary_url)
+        
+        # Fallback to local storage (legacy)
         upload_folder = current_app.config['UPLOAD_FOLDER']
         if not os.path.exists(upload_folder):
             os.makedirs(upload_folder, exist_ok=True)
@@ -127,7 +149,12 @@ def view_model(model_id):
             if not current_user.is_authenticated or model.user_id != current_user.id:
                 return jsonify({'error': 'Access denied'}), 403
         
-        # Ensure upload folder exists
+        # Handle Cloudinary storage
+        if model.storage_type == 'cloudinary' and model.cloudinary_url:
+            # Redirect to Cloudinary URL for viewing
+            return redirect(model.cloudinary_url)
+        
+        # Fallback to local storage (legacy)
         upload_folder = current_app.config['UPLOAD_FOLDER']
         if not os.path.exists(upload_folder):
             return jsonify({'error': 'Upload folder not found'}), 404
@@ -200,9 +227,20 @@ def models_status():
         models_data = []
         for model in models.items:
             model_dict = model.to_dict()
-            file_path = os.path.join(upload_folder, model.filename)
-            model_dict['file_available'] = os.path.exists(file_path)
-            model_dict['file_status'] = 'available' if model_dict['file_available'] else 'missing'
+            
+            # Check file availability based on storage type
+            if model.storage_type == 'cloudinary' and model.cloudinary_public_id:
+                # Check Cloudinary file existence
+                model_dict['file_available'] = cloudinary_service.check_model_exists(model.cloudinary_public_id)
+                model_dict['file_status'] = 'available' if model_dict['file_available'] else 'missing'
+                model_dict['storage_info'] = 'Cloudinary'
+            else:
+                # Check local file existence (legacy)
+                file_path = os.path.join(upload_folder, model.filename)
+                model_dict['file_available'] = os.path.exists(file_path)
+                model_dict['file_status'] = 'available' if model_dict['file_available'] else 'missing'
+                model_dict['storage_info'] = 'Local (ephemeral)'
+            
             models_data.append(model_dict)
         
         return jsonify({
