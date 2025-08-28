@@ -7,10 +7,29 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Three.js for 3D model viewing - using more reliable CDN -->
     <script src="https://unpkg.com/three@0.157.0/build/three.min.js"></script>
-    <script src="https://unpkg.com/three@0.157.0/examples/js/loaders/OBJLoader.js"></script>
-    <script src="https://unpkg.com/three@0.157.0/examples/js/loaders/FBXLoader.js"></script>
-    <script src="https://unpkg.com/three@0.157.0/examples/js/loaders/GLTFLoader.js"></script>
-    <script src="https://unpkg.com/three@0.157.0/examples/js/controls/OrbitControls.js"></script>
+    <script>
+        // Dynamically load Three.js loaders with fallback
+        function loadScript(src, callback) {
+            const script = document.createElement('script');
+            script.src = src;
+            script.onload = callback;
+            script.onerror = () => {
+                console.warn('Failed to load:', src);
+                if (callback) callback();
+            };
+            document.head.appendChild(script);
+        }
+        
+        // Load loaders after Three.js is ready
+        window.addEventListener('DOMContentLoaded', () => {
+            if (typeof THREE !== 'undefined') {
+                loadScript('https://unpkg.com/three@0.157.0/examples/js/loaders/GLTFLoader.js');
+                loadScript('https://unpkg.com/three@0.157.0/examples/js/loaders/OBJLoader.js');
+                loadScript('https://unpkg.com/three@0.157.0/examples/js/loaders/FBXLoader.js');
+                loadScript('https://unpkg.com/three@0.157.0/examples/js/controls/OrbitControls.js');
+            }
+        });
+    </script>
     <style>
         /* Custom CSS for missing classes */
         .gradient-bg {
@@ -401,6 +420,15 @@
     
     // Helper function to create model viewers
     function createModelViewer(containerId, modelId, options = {}) {
+        // Add delay to ensure all scripts are loaded
+        setTimeout(() => {
+            const modelUrl = `/api/view/${modelId}`;
+            return new ModelViewer(containerId, modelUrl, options);
+        }, 1000); // 1 second delay
+    }
+    
+    // Alternative function for immediate creation (for testing)
+    function createModelViewerImmediate(containerId, modelId, options = {}) {
         const modelUrl = `/api/view/${modelId}`;
         return new ModelViewer(containerId, modelUrl, options);
     }
