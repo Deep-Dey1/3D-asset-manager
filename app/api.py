@@ -131,8 +131,26 @@ def view_model(model_id):
         if not os.path.exists(file_path):
             return jsonify({'error': 'File not found on server'}), 404
         
-        # Serve file for viewing (not download)
-        return send_file(file_path, as_attachment=False)
+        # Determine MIME type based on file extension
+        file_extension = model.file_extension.lower()
+        mime_types = {
+            'glb': 'model/gltf-binary',
+            'gltf': 'application/json',
+            'obj': 'text/plain',
+            'fbx': 'application/octet-stream',
+            'dae': 'application/xml',
+            '3ds': 'application/octet-stream',
+            'ply': 'application/octet-stream',
+            'stl': 'application/octet-stream'
+        }
+        
+        mimetype = mime_types.get(file_extension, 'application/octet-stream')
+        
+        # Serve file for viewing (not download) with proper headers
+        return send_file(file_path, 
+                        as_attachment=False,
+                        mimetype=mimetype,
+                        download_name=model.original_filename)
         
     except Exception as e:
         print(f"View error: {e}")

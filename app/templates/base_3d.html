@@ -5,13 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}3D Asset Manager{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Three.js for 3D model viewing -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Three.js for 3D model viewing - using more reliable CDN -->
+    <script src="https://unpkg.com/three@0.157.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.157.0/examples/js/loaders/OBJLoader.js"></script>
+    <script src="https://unpkg.com/three@0.157.0/examples/js/loaders/FBXLoader.js"></script>
+    <script src="https://unpkg.com/three@0.157.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://unpkg.com/three@0.157.0/examples/js/controls/OrbitControls.js"></script>
     <style>
+        /* Custom CSS for missing classes */
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .card-shadow {
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .hover-scale:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
         .model-viewer {
             width: 100%;
             height: 200px;
@@ -135,53 +150,78 @@
         }
         
         init() {
-            if (!this.container) return;
+            if (!this.container) {
+                console.error('Container not found');
+                return;
+            }
             
             // Show loading state
             this.container.innerHTML = '<div class="viewer-loading"><div class="text-center"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>Loading 3D Model...</div></div>';
             
-            // Create scene
-            this.scene = new THREE.Scene();
-            this.scene.background = new THREE.Color(this.options.backgroundColor);
+            // Check if Three.js is loaded
+            if (typeof THREE === 'undefined') {
+                this.showError('Three.js library not loaded');
+                return;
+            }
             
-            // Create camera
-            this.camera = new THREE.PerspectiveCamera(75, this.options.width / this.options.height, 0.1, 1000);
-            this.camera.position.set(0, 0, 5);
-            
-            // Create renderer
-            this.renderer = new THREE.WebGLRenderer({ antialias: true });
-            this.renderer.setSize(this.options.width, this.options.height);
-            this.renderer.shadowMap.enabled = true;
-            this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-            
-            // Add lighting
-            const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
-            this.scene.add(ambientLight);
-            
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            directionalLight.position.set(10, 10, 5);
-            directionalLight.castShadow = true;
-            this.scene.add(directionalLight);
-            
-            // Add controls
-            this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
-            this.controls.enableDamping = true;
-            this.controls.dampingFactor = 0.25;
-            this.controls.enableZoom = true;
-            
-            // Load model
-            this.loadModel();
-            
-            // Clear container and add renderer
-            this.container.innerHTML = '';
-            this.container.appendChild(this.renderer.domElement);
-            
-            // Start render loop
-            this.animate();
+            try {
+                // Create scene
+                this.scene = new THREE.Scene();
+                this.scene.background = new THREE.Color(this.options.backgroundColor);
+                
+                // Create camera
+                this.camera = new THREE.PerspectiveCamera(75, this.options.width / this.options.height, 0.1, 1000);
+                this.camera.position.set(0, 0, 5);
+                
+                // Create renderer
+                this.renderer = new THREE.WebGLRenderer({ antialias: true });
+                this.renderer.setSize(this.options.width, this.options.height);
+                this.renderer.shadowMap.enabled = true;
+                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                
+                // Add lighting
+                const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+                this.scene.add(ambientLight);
+                
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                directionalLight.position.set(10, 10, 5);
+                directionalLight.castShadow = true;
+                this.scene.add(directionalLight);
+                
+                // Add point light for better illumination
+                const pointLight = new THREE.PointLight(0xffffff, 0.5, 100);
+                pointLight.position.set(5, 5, 5);
+                this.scene.add(pointLight);
+                
+                // Add controls
+                if (typeof THREE.OrbitControls !== 'undefined') {
+                    this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+                    this.controls.enableDamping = true;
+                    this.controls.dampingFactor = 0.25;
+                    this.controls.enableZoom = true;
+                } else {
+                    console.warn('OrbitControls not available');
+                }
+                
+                // Clear container and add renderer
+                this.container.innerHTML = '';
+                this.container.appendChild(this.renderer.domElement);
+                
+                // Load model
+                this.loadModel();
+                
+                // Start render loop
+                this.animate();
+                
+            } catch (error) {
+                console.error('Error initializing 3D viewer:', error);
+                this.showError('Failed to initialize 3D viewer: ' + error.message);
+            }
         }
         
         loadModel() {
             const fileExtension = this.modelUrl.split('.').pop().toLowerCase();
+            console.log('Loading model with extension:', fileExtension, 'URL:', this.modelUrl);
             
             try {
                 switch (fileExtension) {
@@ -196,10 +236,12 @@
                         this.loadFBX();
                         break;
                     default:
+                        console.log('Unsupported format, showing placeholder');
                         this.showPlaceholder();
                 }
             } catch (error) {
-                this.showError('Failed to load 3D model');
+                console.error('Error loading model:', error);
+                this.showError('Failed to load 3D model: ' + error.message);
             }
         }
         
@@ -220,17 +262,26 @@
         }
         
         loadGLTF() {
+            // Check if GLTFLoader exists
+            if (typeof THREE.GLTFLoader === 'undefined') {
+                console.error('GLTFLoader not available, showing placeholder');
+                this.showPlaceholder();
+                return;
+            }
+
             const loader = new THREE.GLTFLoader();
             loader.load(
                 this.modelUrl,
                 (gltf) => {
+                    console.log('GLTF model loaded successfully', gltf);
                     this.onModelLoaded(gltf.scene);
                 },
                 (progress) => {
-                    // Loading progress
+                    console.log('Loading progress:', progress);
                 },
                 (error) => {
-                    this.showError('Failed to load GLTF model');
+                    console.error('Failed to load GLTF model:', error);
+                    this.showError('Failed to load GLB/GLTF model: ' + error.message);
                 }
             );
         }
@@ -252,12 +303,17 @@
         }
         
         onModelLoaded(model) {
+            console.log('Model loaded into scene:', model);
             this.model = model;
             
-            // Add default material if none exists
+            // Ensure materials exist
             model.traverse((child) => {
-                if (child.isMesh && !child.material) {
-                    child.material = new THREE.MeshLambertMaterial({ color: 0x888888 });
+                if (child.isMesh) {
+                    if (!child.material) {
+                        child.material = new THREE.MeshLambertMaterial({ color: 0x888888 });
+                    }
+                    child.castShadow = true;
+                    child.receiveShadow = true;
                 }
             });
             
@@ -266,29 +322,55 @@
             const center = box.getCenter(new THREE.Vector3());
             const size = box.getSize(new THREE.Vector3());
             
+            console.log('Model bounds:', { center, size });
+            
             // Center the model
             model.position.sub(center);
             
-            // Scale to fit in view
+            // Scale to fit in view (make it a bit smaller for better viewing)
             const maxDim = Math.max(size.x, size.y, size.z);
-            const scale = 2 / maxDim;
+            const scale = 2.5 / maxDim; // Slightly larger scale
             model.scale.setScalar(scale);
             
             this.scene.add(model);
             
-            // Adjust camera position
-            this.camera.position.set(0, 0, 3);
+            // Adjust camera position based on model size
+            const distance = Math.max(3, maxDim * scale * 1.5);
+            this.camera.position.set(distance, distance * 0.7, distance);
             this.controls.target.set(0, 0, 0);
             this.controls.update();
+            
+            console.log('Model successfully added to scene');
         }
         
         showPlaceholder() {
+            console.log('Showing placeholder cube');
             // Create a simple cube as placeholder
             const geometry = new THREE.BoxGeometry(1, 1, 1);
-            const material = new THREE.MeshLambertMaterial({ color: 0x888888 });
+            const material = new THREE.MeshLambertMaterial({ 
+                color: 0x888888,
+                transparent: true,
+                opacity: 0.8
+            });
             const cube = new THREE.Mesh(geometry, material);
+            
+            // Add wireframe for better visibility
+            const wireframeGeometry = new THREE.EdgesGeometry(geometry);
+            const wireframeMaterial = new THREE.LineBasicMaterial({ color: 0x444444 });
+            const wireframe = new THREE.LineSegments(wireframeGeometry, wireframeMaterial);
+            cube.add(wireframe);
+            
             this.scene.add(cube);
             this.model = cube;
+            
+            // Add rotation animation for placeholder
+            const animate = () => {
+                if (this.model === cube) {
+                    cube.rotation.x += 0.01;
+                    cube.rotation.y += 0.01;
+                }
+            };
+            setInterval(animate, 16);
         }
         
         showError(message) {
