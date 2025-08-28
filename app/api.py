@@ -93,7 +93,13 @@ def download_model(model_id):
         file_path = os.path.join(upload_folder, model.filename)
         
         if not os.path.exists(file_path):
-            return jsonify({'error': 'File not found on server'}), 404
+            # File missing after server restart (Railway ephemeral filesystem)
+            return jsonify({
+                'error': 'Model file unavailable', 
+                'message': 'File was lost during server restart. Please re-upload the model.',
+                'model_id': model_id,
+                'model_name': model.name
+            }), 404
         
         # Increment download count
         model.downloads += 1
@@ -129,7 +135,13 @@ def view_model(model_id):
         file_path = os.path.join(upload_folder, model.filename)
         
         if not os.path.exists(file_path):
-            return jsonify({'error': 'File not found on server'}), 404
+            # File missing after server restart (Railway ephemeral filesystem)
+            return jsonify({
+                'error': 'Model file unavailable', 
+                'message': 'File was lost during server restart. Please re-upload the model.',
+                'model_id': model_id,
+                'model_name': model.name
+            }), 404
         
         # Determine MIME type based on file extension
         file_extension = model.file_extension.lower()
@@ -155,6 +167,57 @@ def view_model(model_id):
     except Exception as e:
         print(f"View error: {e}")
         return jsonify({'error': f'View failed: {str(e)}'}), 500
+
+@api_bp.route('/models/status')
+def models_status():
+    """Get all models with their file availability status"""
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        search = request.args.get('search', '')
+        user_only = request.args.get('user_only', 'false').lower() == 'true'
+        
+        query = Model3D.query
+        
+        if user_only and current_user.is_authenticated:
+            query = query.filter_by(user_id=current_user.id)
+        else:
+            query = query.filter_by(is_public=True)
+        
+        if search:
+            query = query.filter(
+                (Model3D.name.contains(search)) | 
+                (Model3D.description.contains(search))
+            )
+        
+        models = query.order_by(Model3D.upload_date.desc()).paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+        
+        upload_folder = current_app.config['UPLOAD_FOLDER']
+        
+        # Check file availability for each model
+        models_data = []
+        for model in models.items:
+            model_dict = model.to_dict()
+            file_path = os.path.join(upload_folder, model.filename)
+            model_dict['file_available'] = os.path.exists(file_path)
+            model_dict['file_status'] = 'available' if model_dict['file_available'] else 'missing'
+            models_data.append(model_dict)
+        
+        return jsonify({
+            'models': models_data,
+            'pagination': {
+                'page': models.page,
+                'pages': models.pages,
+                'per_page': models.per_page,
+                'total': models.total,
+                'has_next': models.has_next,
+                'has_prev': models.has_prev
+            }
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @api_bp.route('/models')
 def list_models():

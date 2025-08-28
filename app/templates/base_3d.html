@@ -317,20 +317,28 @@
             
             modelViewer.addEventListener('error', (event) => {
                 console.error('Model failed to load:', modelUrl, event.detail);
-                if (options.onError) options.onError(event.detail);
                 
-                // Show error message
+                // Show detailed error message
                 const errorDiv = document.createElement('div');
-                errorDiv.className = 'flex items-center justify-center h-full bg-red-50 text-red-600 text-sm';
+                errorDiv.className = 'flex items-center justify-center h-full bg-yellow-50 text-yellow-800 text-sm p-4';
                 errorDiv.innerHTML = `
-                    <div class="text-center">
-                        <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
-                        <div>Failed to load 3D model</div>
-                        <div class="text-xs mt-1">Please try refreshing the page</div>
+                    <div class="text-center max-w-sm">
+                        <i class="fas fa-exclamation-triangle text-3xl mb-3 text-yellow-600"></i>
+                        <div class="font-semibold mb-2">Model File Unavailable</div>
+                        <div class="text-xs mb-3 text-yellow-700">
+                            This model exists in the database but the file was lost during server restart.
+                            This is a common issue with Railway's ephemeral filesystem.
+                        </div>
+                        <div class="text-xs text-yellow-600">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Model ID: ${modelUrl.split('/').pop()}
+                        </div>
                     </div>
                 `;
                 container.innerHTML = '';
                 container.appendChild(errorDiv);
+                
+                if (options.onError) options.onError(event.detail);
             });
             
             // Add model info overlay if requested
@@ -429,6 +437,54 @@
             return createModelViewer(containerId, modelId, options);
         }
         
+        // Function to check model file availability and fetch models with status
+        async function fetchModelsWithStatus(page = 1, search = '') {
+            try {
+                const params = new URLSearchParams({
+                    page: page,
+                    per_page: 12,
+                    search: search
+                });
+                
+                const response = await fetch(`/api/models/status?${params}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    return data;
+                } else {
+                    console.error('Failed to fetch models:', data.error);
+                    return { models: [], pagination: { page: 1, pages: 0, total: 0 } };
+                }
+            } catch (error) {
+                console.error('Error fetching models:', error);
+                return { models: [], pagination: { page: 1, pages: 0, total: 0 } };
+            }
+        }
+        
+        // Function to display model status in cards
+        function displayModelStatus(modelData, containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
+            if (!modelData.file_available) {
+                // Show unavailable state
+                container.innerHTML = `
+                    <div class="h-full flex items-center justify-center bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg border-2 border-yellow-200">
+                        <div class="text-center p-4">
+                            <i class="fas fa-cloud-download-alt text-3xl text-yellow-600 mb-2"></i>
+                            <div class="text-sm font-medium text-yellow-800 mb-1">File Missing</div>
+                            <div class="text-xs text-yellow-600">Lost during restart</div>
+                            <div class="text-xs text-yellow-500 mt-2">Model ID: ${modelData.id}</div>
+                        </div>
+                    </div>
+                `;
+                return null;
+            } else {
+                // File available, create normal viewer
+                return createCardModelViewer(containerId, modelData.id, modelData);
+            }
+        }
+
         // Legacy support for existing code
         function createModelViewerImmediate(containerId, modelId, options = {}) {
             return createModelViewer(containerId, modelId, options);

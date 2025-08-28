@@ -4,6 +4,24 @@
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
+    <!-- Railway Storage Notice -->
+    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <div class="flex items-start">
+            <div class="flex-shrink-0">
+                <i class="fas fa-info-circle text-blue-600 text-lg mt-0.5"></i>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-blue-800">Railway Deployment Notice</h3>
+                <div class="mt-1 text-sm text-blue-700">
+                    <p>Models with <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                        <i class="fas fa-cloud-download-alt mr-1"></i>File Missing
+                    </span> status exist in the database but files were lost during server restart (Railway's ephemeral filesystem). 
+                    These models need to be re-uploaded for preview and download functionality.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold text-gray-800">Browse 3D Models</h1>
         
@@ -46,7 +64,13 @@
                 
                 <!-- Model Info -->
                 <div class="p-4">
-                    <h3 class="font-bold text-lg text-gray-800 mb-2 truncate">{{ model.name }}</h3>
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-bold text-lg text-gray-800 truncate flex-1 mr-2">{{ model.name }}</h3>
+                        <!-- File Status Indicator -->
+                        <span id="status-{{ model.id }}" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                            <i class="fas fa-clock mr-1"></i>Checking...
+                        </span>
+                    </div>
                     <p class="text-gray-600 text-sm mb-3 h-12 overflow-hidden">
                         {% if model.description %}
                             {% if model.description|length > 80 %}
@@ -144,17 +168,42 @@
 <script>
 const loadedViewers = new Set();
 
-function load3DModel(modelId) {
+// Enhanced function to load 3D model with file availability check
+async function load3DModel(modelId) {
     if (loadedViewers.has(modelId)) return;
     
     loadedViewers.add(modelId);
     
     try {
-        // Use the new model-viewer web component
+        // First check if the model file is available
+        const response = await fetch(`/api/models/status?per_page=1&page=1&search=`);
+        const data = await response.json();
+        
+        // Find the specific model in the response
+        const modelData = data.models.find(m => m.id == modelId);
+        
+        if (modelData && !modelData.file_available) {
+            // Show file missing state
+            const container = document.getElementById(`viewer-${modelId}`);
+            container.innerHTML = `
+                <div class="flex items-center justify-center h-full bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-200 rounded-lg">
+                    <div class="text-center p-3">
+                        <i class="fas fa-cloud-download-alt text-2xl text-yellow-600 mb-2"></i>
+                        <div class="text-xs font-medium text-yellow-800 mb-1">File Unavailable</div>
+                        <div class="text-xs text-yellow-600">Lost during restart</div>
+                        <div class="text-xs text-yellow-500 mt-1">ID: ${modelId}</div>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+        
+        // File available, create normal viewer
         createCardModelViewer(`viewer-${modelId}`, modelId, {
             id: modelId,
             name: 'Model ' + modelId
         });
+        
     } catch (error) {
         console.error('Failed to load 3D model:', error);
         const container = document.getElementById(`viewer-${modelId}`);
@@ -169,15 +218,65 @@ function load3DModel(modelId) {
     }
 }
 
-// Auto-load first 6 models on page load for better user experience
-document.addEventListener('DOMContentLoaded', function() {
-    const viewers = document.querySelectorAll('[id^="viewer-"]');
-    viewers.forEach((viewer, index) => {
-        if (index < 6) { // Auto-load first 6 models
-            const modelId = viewer.id.replace('viewer-', '');
-            setTimeout(() => load3DModel(modelId), index * 300); // Faster loading
-        }
-    });
+// Check all models on page load and show status
+document.addEventListener('DOMContentLoaded', async function() {
+    try {
+        // Fetch all models with their file status
+        const response = await fetch('/api/models/status?per_page=50');
+        const data = await response.json();
+        
+        // Update each model card with file availability status
+        data.models.forEach(model => {
+            const container = document.getElementById(`viewer-${model.id}`);
+            const statusIndicator = document.getElementById(`status-${model.id}`);
+            
+            if (container) {
+                if (!model.file_available) {
+                    // Update status indicator
+                    if (statusIndicator) {
+                        statusIndicator.className = 'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800';
+                        statusIndicator.innerHTML = '<i class="fas fa-cloud-download-alt mr-1"></i>File Missing';
+                    }
+                    
+                    // Show file missing immediately
+                    container.innerHTML = `
+                        <div class="flex items-center justify-center h-full bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-200 rounded-lg">
+                            <div class="text-center p-3">
+                                <i class="fas fa-cloud-download-alt text-2xl text-yellow-600 mb-2"></i>
+                                <div class="text-xs font-medium text-yellow-800 mb-1">File Missing</div>
+                                <div class="text-xs text-yellow-600">Lost during restart</div>
+                                <div class="text-xs text-yellow-500 mt-1">Re-upload needed</div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // Update status indicator for available files
+                    if (statusIndicator) {
+                        statusIndicator.className = 'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800';
+                        statusIndicator.innerHTML = '<i class="fas fa-check-circle mr-1"></i>Available';
+                    }
+                    
+                    // Auto-load available models (first 6 for performance)
+                    const viewers = document.querySelectorAll('[id^="viewer-"]');
+                    const availableCount = Array.from(viewers).indexOf(container);
+                    if (availableCount < 6) {
+                        setTimeout(() => load3DModel(model.id), availableCount * 200);
+                    }
+                }
+            }
+        });
+        
+    } catch (error) {
+        console.error('Failed to check model status:', error);
+        // Fallback to normal loading
+        const viewers = document.querySelectorAll('[id^="viewer-"]');
+        viewers.forEach((viewer, index) => {
+            if (index < 6) {
+                const modelId = viewer.id.replace('viewer-', '');
+                setTimeout(() => load3DModel(modelId), index * 300);
+            }
+        });
+    }
 });
 </script>
 {% endblock %}
