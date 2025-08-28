@@ -180,68 +180,12 @@ function resetDetailCamera() {
     }
 }
 
-// Auto-load the model on page load with file availability check
-document.addEventListener('DOMContentLoaded', async function() {
-    const modelId = '{{ model.id }}';
-    
-    try {
-        // Check if the model file is available first
-        const response = await fetch('/api/models/status?per_page=1');
-        const data = await response.json();
-        const modelData = data.models.find(m => m.id == modelId);
-        
-        if (modelData && !modelData.file_available) {
-            // Show file missing state in detail viewer
-            const container = document.getElementById('viewer-detail-' + modelId);
-            if (container) {
-                container.innerHTML = `
-                    <div class="flex items-center justify-center h-full bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-300 rounded-lg">
-                        <div class="text-center p-8 max-w-md">
-                            <i class="fas fa-exclamation-triangle text-5xl text-yellow-600 mb-4"></i>
-                            <h3 class="text-lg font-semibold text-yellow-800 mb-3">Model File Unavailable</h3>
-                            <p class="text-sm text-yellow-700 mb-4">
-                                This model exists in the database but the file was lost during server restart. 
-                                This is a common issue with Railway's ephemeral filesystem.
-                            </p>
-                            <div class="bg-yellow-100 p-3 rounded-lg mb-4">
-                                <p class="text-xs text-yellow-800">
-                                    <strong>Technical Note:</strong> Files are stored locally and get wiped on each deployment. 
-                                    Consider implementing persistent storage like AWS S3 or Railway Volumes.
-                                </p>
-                            </div>
-                            <div class="text-xs text-yellow-600">
-                                <i class="fas fa-database mr-1"></i>
-                                Model ID: ${modelId} | Database: ✓ Available | File: ✗ Missing
-                            </div>
-                        </div>
-                    </div>
-                `;
-                
-                // Also disable download button
-                const downloadBtn = document.querySelector('.download-btn');
-                if (downloadBtn) {
-                    downloadBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                    downloadBtn.onclick = function(e) {
-                        e.preventDefault();
-                        alert('File is not available for download. Please re-upload the model.');
-                    };
-                }
-            }
-            return;
-        }
-        
-        // File available, load normally with delay
-        setTimeout(() => {
-            loadDetailModel(modelId);
-        }, 500);
-        
-    } catch (error) {
-        console.error('Failed to check model status:', error);
-        // Fallback to normal loading
-        setTimeout(() => {
-            loadDetailModel(modelId);
-        }, 500);
-    }
+// Auto-load the model on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Small delay to ensure model-viewer is ready
+    setTimeout(() => {
+        loadDetailModel('{{ model.id }}');
+    }, 500);
 });
 
 </script>
