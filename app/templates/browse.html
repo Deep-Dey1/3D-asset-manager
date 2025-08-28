@@ -18,7 +18,13 @@
         </form>
     </div>
 
-    {% if models and models.items %}
+    {% if error %}
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+            <strong>Error:</strong> {{ error }}
+        </div>
+    {% endif %}
+
+    {% if models and models.items and models.items|length > 0 %}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {% for model in models.items %}
             <div class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
