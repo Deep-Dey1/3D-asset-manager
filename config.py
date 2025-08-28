@@ -36,15 +36,7 @@ class Config:
     
     # File upload settings
     MAX_CONTENT_LENGTH = 100 * 1024 * 1024  # 100MB
-    
-    # Use Railway Volume for persistent storage in production, local uploads for development
-    if os.environ.get('RAILWAY_ENVIRONMENT'):
-        # Production: Use Railway Volume mount point
-        UPLOAD_FOLDER = os.environ.get('UPLOAD_PATH', '/app/uploads')
-    else:
-        # Development: Use local uploads folder
-        UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
-    
+    UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
     ALLOWED_EXTENSIONS = {'obj', 'fbx', 'gltf', 'glb', 'dae', '3ds', 'ply', 'stl'}
     
     # Railway specific
