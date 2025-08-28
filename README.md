@@ -30,7 +30,7 @@ A professional Python Flask web application for managing 3D models with upload/d
 - **File Handling**: Werkzeug, Python-Magic
 - **Deployment**: Railway, Gunicorn
 
-## 🚀 Railway Deployment
+## 🚀 Railway Deployment with Persistent Storage
 
 ### Prerequisites
 1. Railway account
@@ -49,6 +49,45 @@ A professional Python Flask web application for managing 3D models with upload/d
    # Initialize project
    railway init
    ```
+
+2. **Add PostgreSQL Database**:
+   - Go to Railway Dashboard → **Add Service** → **Database** → **PostgreSQL**
+   - Railway automatically sets `DATABASE_URL` environment variable
+
+3. **Configure Persistent File Storage**:
+   - Go to **Settings** → **Volumes**
+   - Click **"Add Volume"**
+   - Configure:
+     - **Name**: `3d-assets-storage`
+     - **Mount Path**: `/app/data`
+     - **Size**: `5GB` (adjust based on needs)
+
+4. **Set Environment Variables**:
+   ```bash
+   # In Railway Dashboard → Variables
+   UPLOAD_PATH=/app/data/uploads
+   SECRET_KEY=your-production-secret-key-here
+   RAILWAY_ENVIRONMENT=production
+   ```
+
+5. **Deploy**:
+   ```bash
+   # Push to GitHub (triggers auto-deploy)
+   git add .
+   git commit -m "Deploy with persistent storage"
+   git push origin main
+   ```
+
+### ⚠️ **Critical**: Persistent Storage Solution
+
+**Problem**: Railway's ephemeral file system loses uploaded files on redeploy, even though database records persist.
+
+**Solution**: Railway Volume Storage
+- ✅ Files stored in `/app/data/uploads` persist across redeploys
+- ✅ Database records in PostgreSQL persist
+- ✅ Models remain viewable and downloadable after redeploy
+
+See `RAILWAY_STORAGE_GUIDE.md` for detailed configuration.
 
 2. **Add PostgreSQL Database**:
    - Go to Railway dashboard

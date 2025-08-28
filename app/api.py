@@ -114,22 +114,43 @@ def view_model(model_id):
         model = Model3D.query.get(model_id)
         
         if not model:
+            print(f"❌ Model {model_id} not found in database")
             return jsonify({'error': 'Model not found'}), 404
         
         # Check if model is public or belongs to current user
         if not model.is_public:
             if not current_user.is_authenticated or model.user_id != current_user.id:
+                print(f"❌ Access denied for model {model_id}")
                 return jsonify({'error': 'Access denied'}), 403
         
         # Ensure upload folder exists
         upload_folder = current_app.config['UPLOAD_FOLDER']
         if not os.path.exists(upload_folder):
+            print(f"❌ Upload folder not found: {upload_folder}")
             return jsonify({'error': 'Upload folder not found'}), 404
         
         file_path = os.path.join(upload_folder, model.filename)
+        print(f"🔍 Looking for file: {file_path}")
+        print(f"📁 Upload folder: {upload_folder}")
+        print(f"📄 Model filename: {model.filename}")
         
         if not os.path.exists(file_path):
-            return jsonify({'error': 'File not found on server'}), 404
+            print(f"❌ File not found: {file_path}")
+            # List files in upload directory for debugging
+            try:
+                files_in_dir = os.listdir(upload_folder)
+                print(f"📋 Files in upload directory: {files_in_dir}")
+            except Exception as e:
+                print(f"❌ Cannot list upload directory: {e}")
+            
+            return jsonify({
+                'error': 'File not found on server',
+                'debug_info': {
+                    'expected_path': file_path,
+                    'upload_folder': upload_folder,
+                    'filename': model.filename
+                }
+            }), 404
         
         # Determine MIME type based on file extension
         file_extension = model.file_extension.lower()
