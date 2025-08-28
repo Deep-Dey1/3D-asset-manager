@@ -8,7 +8,6 @@ and runs a file integrity check.
 
 import os
 import sys
-from sqlalchemy import text
 from app import create_app, db
 from app.models import Model3D
 
@@ -18,33 +17,18 @@ def migrate_database():
     
     with app.app_context():
         try:
-            # Check if the column already exists
-            result = db.engine.execute(text("PRAGMA table_info(model3_d)"))
-            columns = [row[1] for row in result]
+            # Create all tables (this will add missing columns)
+            db.create_all()
+            print("✅ Database tables updated successfully!")
             
-            if 'file_missing' not in columns:
-                print("Adding file_missing column to Model3D table...")
-                db.engine.execute(text("ALTER TABLE model3_d ADD COLUMN file_missing BOOLEAN DEFAULT 0"))
-                print("✅ file_missing column added successfully!")
-            else:
-                print("✅ file_missing column already exists")
+            # Run file integrity check after migration
+            print("\nRunning file integrity check...")
+            check_file_integrity()
+            return True
                 
         except Exception as e:
             print(f"Error during migration: {e}")
-            # For PostgreSQL, try a different approach
-            try:
-                print("Trying PostgreSQL syntax...")
-                db.engine.execute(text("ALTER TABLE model3_d ADD COLUMN IF NOT EXISTS file_missing BOOLEAN DEFAULT FALSE"))
-                print("✅ file_missing column added successfully (PostgreSQL)!")
-            except Exception as e2:
-                print(f"Migration failed: {e2}")
-                print("The file_missing column may already exist or there may be a database issue.")
-                return False
-        
-        # Run file integrity check after migration
-        print("\nRunning file integrity check...")
-        check_file_integrity()
-        return True
+            return False
 
 def check_file_integrity():
     """Check if all model files exist and update database accordingly"""
