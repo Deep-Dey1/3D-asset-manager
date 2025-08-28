@@ -1,7 +1,8 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, current_app
 from app import db
 from app.models import User, Model3D
 from sqlalchemy import text
+import os
 
 # Simple API test blueprint
 test_bp = Blueprint('test', __name__, url_prefix='/test')
@@ -38,7 +39,8 @@ def test_database():
             'tables': tables,
             'user_count': user_count,
             'model_count': model_count,
-            'database_url_set': 'DATABASE_URL' in db.app.config.get('ENV_VARS', {})
+            'database_url': current_app.config.get('SQLALCHEMY_DATABASE_URI', 'Not set')[:50] + '...',
+            'env_database_url': os.environ.get('DATABASE_URL', 'Not set')[:50] + '...'
         })
         
     except Exception as e:
@@ -72,3 +74,12 @@ def test_models():
             'error': str(e),
             'error_type': type(e).__name__
         }), 500
+
+@test_bp.route('/simple')
+def test_simple():
+    """Test basic Flask functionality"""
+    return jsonify({
+        'status': 'success',
+        'message': 'Flask app is working',
+        'environment': os.environ.get('RAILWAY_ENVIRONMENT', 'unknown')
+    })
