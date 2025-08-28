@@ -75,16 +75,25 @@ def upload_model():
 @api_bp.route('/download/<int:model_id>')
 def download_model(model_id):
     try:
-        model = Model3D.query.get_or_404(model_id)
+        model = Model3D.query.get(model_id)
+        
+        if not model:
+            return jsonify({'error': 'Model not found'}), 404
         
         # Check if model is public or belongs to current user
-        if not model.is_public and (not current_user.is_authenticated or model.user_id != current_user.id):
-            return jsonify({'error': 'Access denied'}), 403
+        if not model.is_public:
+            if not current_user.is_authenticated or model.user_id != current_user.id:
+                return jsonify({'error': 'Access denied'}), 403
         
-        file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], model.filename)
+        # Ensure upload folder exists
+        upload_folder = current_app.config['UPLOAD_FOLDER']
+        if not os.path.exists(upload_folder):
+            os.makedirs(upload_folder, exist_ok=True)
+        
+        file_path = os.path.join(upload_folder, model.filename)
         
         if not os.path.exists(file_path):
-            return jsonify({'error': 'File not found'}), 404
+            return jsonify({'error': 'File not found on server'}), 404
         
         # Increment download count
         model.downloads += 1
@@ -95,7 +104,39 @@ def download_model(model_id):
                         as_attachment=True)
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Download error: {e}")
+        return jsonify({'error': f'Download failed: {str(e)}'}), 500
+
+@api_bp.route('/view/<int:model_id>')
+def view_model(model_id):
+    """Serve model file for 3D viewing (not as download)"""
+    try:
+        model = Model3D.query.get(model_id)
+        
+        if not model:
+            return jsonify({'error': 'Model not found'}), 404
+        
+        # Check if model is public or belongs to current user
+        if not model.is_public:
+            if not current_user.is_authenticated or model.user_id != current_user.id:
+                return jsonify({'error': 'Access denied'}), 403
+        
+        # Ensure upload folder exists
+        upload_folder = current_app.config['UPLOAD_FOLDER']
+        if not os.path.exists(upload_folder):
+            return jsonify({'error': 'Upload folder not found'}), 404
+        
+        file_path = os.path.join(upload_folder, model.filename)
+        
+        if not os.path.exists(file_path):
+            return jsonify({'error': 'File not found on server'}), 404
+        
+        # Serve file for viewing (not download)
+        return send_file(file_path, as_attachment=False)
+        
+    except Exception as e:
+        print(f"View error: {e}")
+        return jsonify({'error': f'View failed: {str(e)}'}), 500
 
 @api_bp.route('/models')
 def list_models():

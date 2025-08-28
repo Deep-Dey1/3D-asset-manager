@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base_3d.html" %}
 
 {% block title %}Browse Models - 3D Asset Manager{% endblock %}
 
@@ -28,11 +28,19 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {% for model in models.items %}
             <div class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
-                <!-- Model Preview -->
-                <div class="h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                    <div class="text-center">
-                        <div class="text-4xl text-gray-400 mb-2">🎨</div>
-                        <p class="text-gray-600 text-sm">{{ model.file_format.upper() }} Model</p>
+                <!-- 3D Model Preview -->
+                <div class="h-48 relative">
+                    <div id="viewer-{{ model.id }}" class="model-viewer">
+                        <div class="viewer-loading">
+                            <div class="text-center">
+                                <div class="text-4xl text-gray-400 mb-2">🎨</div>
+                                <p class="text-gray-600 text-sm">{{ model.file_format.upper() }} Model</p>
+                                <button onclick="load3DModel('{{ model.id }}')" 
+                                        class="mt-2 bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700">
+                                    Load 3D Preview
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
@@ -132,4 +140,36 @@
         </div>
     {% endif %}
 </div>
+
+<script>
+const loadedViewers = new Set();
+
+function load3DModel(modelId) {
+    if (loadedViewers.has(modelId)) return;
+    
+    loadedViewers.add(modelId);
+    const container = document.getElementById(`viewer-${modelId}`);
+    
+    try {
+        createModelViewer(`viewer-${modelId}`, modelId, {
+            width: container.clientWidth,
+            height: container.clientHeight
+        });
+    } catch (error) {
+        console.error('Failed to load 3D model:', error);
+        container.innerHTML = '<div class="viewer-error"><div class="text-2xl">⚠️</div><div class="text-xs">Preview not available</div></div>';
+    }
+}
+
+// Auto-load first 4 models on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const viewers = document.querySelectorAll('[id^="viewer-"]');
+    viewers.forEach((viewer, index) => {
+        if (index < 4) { // Only auto-load first 4 to avoid performance issues
+            const modelId = viewer.id.replace('viewer-', '');
+            setTimeout(() => load3DModel(modelId), index * 500);
+        }
+    });
+});
+</script>
 {% endblock %}

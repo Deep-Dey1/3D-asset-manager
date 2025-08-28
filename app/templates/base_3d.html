@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}3D Asset Manager{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js for 3D model viewing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        .model-viewer {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+        .model-viewer-large {
+            width: 100%;
+            height: 400px;
+        }
+        .viewer-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #6b7280;
+        }
+        .viewer-error {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #ef4444;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <a href="{{ url_for('main.index') }}" class="text-2xl font-bold text-blue-600">3D Asset Manager</a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="{{ url_for('main.index') }}" class="text-gray-600 hover:text-blue-600 transition">Home</a>
+                    <a href="{{ url_for('main.browse') }}" class="text-gray-600 hover:text-blue-600 transition">Browse</a>
+                    {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('main.dashboard') }}" class="text-gray-600 hover:text-blue-600 transition">Dashboard</a>
+                        <a href="{{ url_for('main.profile') }}" class="text-gray-600 hover:text-blue-600 transition">Profile</a>
+                        <a href="{{ url_for('auth.logout') }}" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition">Logout</a>
+                    {% else %}
+                        <a href="{{ url_for('auth.login') }}" class="text-gray-600 hover:text-blue-600 transition">Login</a>
+                        <a href="{{ url_for('auth.register') }}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">Register</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container mx-auto px-4 mt-4">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} bg-{{ 'red' if category == 'error' else 'blue' }}-100 border border-{{ 'red' if category == 'error' else 'blue' }}-400 text-{{ 'red' if category == 'error' else 'blue' }}-700 px-4 py-3 rounded mb-4">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8 mt-16">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">3D Asset Manager</h3>
+                    <p class="text-gray-300">Professional 3D model sharing platform for creators and developers.</p>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Features</h4>
+                    <ul class="text-gray-300 space-y-2">
+                        <li>• Upload & Download 3D Models</li>
+                        <li>• Interactive 3D Preview</li>
+                        <li>• Multiple Format Support</li>
+                        <li>• Public & Private Collections</li>
+                        <li>• RESTful API Access</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Supported Formats</h4>
+                    <p class="text-gray-300">OBJ, FBX, GLTF, GLB, DAE, 3DS, PLY, STL</p>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-300">
+                <p>&copy; 2025 3D Asset Manager. Built with Flask & deployed on Railway.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 3D Model Viewer JavaScript -->
+    <script>
+    class ModelViewer {
+        constructor(containerId, modelUrl, options = {}) {
+            this.container = document.getElementById(containerId);
+            this.modelUrl = modelUrl;
+            this.options = {
+                width: options.width || this.container.clientWidth,
+                height: options.height || this.container.clientHeight,
+                backgroundColor: options.backgroundColor || 0xf5f5f5,
+                ...options
+            };
+            
+            this.scene = null;
+            this.camera = null;
+            this.renderer = null;
+            this.controls = null;
+            this.model = null;
+            
+            this.init();
+        }
+        
+        init() {
+            if (!this.container) return;
+            
+            // Show loading state
+            this.container.innerHTML = '<div class="viewer-loading"><div class="text-center"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>Loading 3D Model...</div></div>';
+            
+            // Create scene
+            this.scene = new THREE.Scene();
+            this.scene.background = new THREE.Color(this.options.backgroundColor);
+            
+            // Create camera
+            this.camera = new THREE.PerspectiveCamera(75, this.options.width / this.options.height, 0.1, 1000);
+            this.camera.position.set(0, 0, 5);
+            
+            // Create renderer
+            this.renderer = new THREE.WebGLRenderer({ antialias: true });
+            this.renderer.setSize(this.options.width, this.options.height);
+            this.renderer.shadowMap.enabled = true;
+            this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            
+            // Add lighting
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+            this.scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(10, 10, 5);
+            directionalLight.castShadow = true;
+            this.scene.add(directionalLight);
+            
+            // Add controls
+            this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+            this.controls.enableDamping = true;
+            this.controls.dampingFactor = 0.25;
+            this.controls.enableZoom = true;
+            
+            // Load model
+            this.loadModel();
+            
+            // Clear container and add renderer
+            this.container.innerHTML = '';
+            this.container.appendChild(this.renderer.domElement);
+            
+            // Start render loop
+            this.animate();
+        }
+        
+        loadModel() {
+            const fileExtension = this.modelUrl.split('.').pop().toLowerCase();
+            
+            try {
+                switch (fileExtension) {
+                    case 'obj':
+                        this.loadOBJ();
+                        break;
+                    case 'gltf':
+                    case 'glb':
+                        this.loadGLTF();
+                        break;
+                    case 'fbx':
+                        this.loadFBX();
+                        break;
+                    default:
+                        this.showPlaceholder();
+                }
+            } catch (error) {
+                this.showError('Failed to load 3D model');
+            }
+        }
+        
+        loadOBJ() {
+            const loader = new THREE.OBJLoader();
+            loader.load(
+                this.modelUrl,
+                (object) => {
+                    this.onModelLoaded(object);
+                },
+                (progress) => {
+                    // Loading progress
+                },
+                (error) => {
+                    this.showError('Failed to load OBJ model');
+                }
+            );
+        }
+        
+        loadGLTF() {
+            const loader = new THREE.GLTFLoader();
+            loader.load(
+                this.modelUrl,
+                (gltf) => {
+                    this.onModelLoaded(gltf.scene);
+                },
+                (progress) => {
+                    // Loading progress
+                },
+                (error) => {
+                    this.showError('Failed to load GLTF model');
+                }
+            );
+        }
+        
+        loadFBX() {
+            const loader = new THREE.FBXLoader();
+            loader.load(
+                this.modelUrl,
+                (object) => {
+                    this.onModelLoaded(object);
+                },
+                (progress) => {
+                    // Loading progress
+                },
+                (error) => {
+                    this.showError('Failed to load FBX model');
+                }
+            );
+        }
+        
+        onModelLoaded(model) {
+            this.model = model;
+            
+            // Add default material if none exists
+            model.traverse((child) => {
+                if (child.isMesh && !child.material) {
+                    child.material = new THREE.MeshLambertMaterial({ color: 0x888888 });
+                }
+            });
+            
+            // Center and scale model
+            const box = new THREE.Box3().setFromObject(model);
+            const center = box.getCenter(new THREE.Vector3());
+            const size = box.getSize(new THREE.Vector3());
+            
+            // Center the model
+            model.position.sub(center);
+            
+            // Scale to fit in view
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const scale = 2 / maxDim;
+            model.scale.setScalar(scale);
+            
+            this.scene.add(model);
+            
+            // Adjust camera position
+            this.camera.position.set(0, 0, 3);
+            this.controls.target.set(0, 0, 0);
+            this.controls.update();
+        }
+        
+        showPlaceholder() {
+            // Create a simple cube as placeholder
+            const geometry = new THREE.BoxGeometry(1, 1, 1);
+            const material = new THREE.MeshLambertMaterial({ color: 0x888888 });
+            const cube = new THREE.Mesh(geometry, material);
+            this.scene.add(cube);
+            this.model = cube;
+        }
+        
+        showError(message) {
+            this.container.innerHTML = `<div class="viewer-error"><div class="text-4xl mb-2">⚠️</div><div>${message}</div></div>`;
+        }
+        
+        animate() {
+            requestAnimationFrame(() => this.animate());
+            
+            if (this.controls) {
+                this.controls.update();
+            }
+            
+            if (this.renderer && this.scene && this.camera) {
+                this.renderer.render(this.scene, this.camera);
+            }
+        }
+        
+        dispose() {
+            if (this.renderer) {
+                this.renderer.dispose();
+            }
+            if (this.controls) {
+                this.controls.dispose();
+            }
+        }
+    }
+    
+    // Helper function to create model viewers
+    function createModelViewer(containerId, modelId, options = {}) {
+        const modelUrl = `/api/view/${modelId}`;
+        return new ModelViewer(containerId, modelUrl, options);
+    }
+    </script>
+</body>
+</html>

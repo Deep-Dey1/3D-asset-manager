@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base_3d.html" %}
 
 {% block title %}Home - 3D Asset Manager{% endblock %}
 
@@ -85,14 +85,34 @@
         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {% for model in recent_models %}
             <div class="bg-white rounded-xl card-shadow hover-scale overflow-hidden">
-                <div class="bg-gradient-to-br from-gray-100 to-gray-200 h-48 flex items-center justify-center">
-                    <i class="fas fa-cube text-4xl text-gray-400"></i>
+                <!-- 3D Preview for Recent Models -->
+                <div class="h-48 relative">
+                    <div id="viewer-recent-{{ model.id }}" class="model-viewer">
+                        <div class="viewer-loading">
+                            <div class="text-center">
+                                <div class="text-3xl text-gray-400 mb-2">🎨</div>
+                                <p class="text-gray-600 text-xs">{{ model.file_format.upper() }} Model</p>
+                                <button onclick="loadRecentModel('{{ model.id }}')" 
+                                        class="mt-2 bg-indigo-600 text-white px-3 py-1 rounded text-xs hover:bg-indigo-700">
+                                    Load Preview
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="p-6">
                     <h3 class="text-lg font-semibold mb-2">{{ model.name }}</h3>
-                    <p class="text-gray-600 text-sm mb-3">{{ model.description[:100] }}...</p>
+                    <p class="text-gray-600 text-sm mb-3">
+                        {% if model.description %}
+                            {% if model.description|length > 100 %}
+                                {{ model.description[:100] }}...
+                            {% else %}
+                                {{ model.description }}
+                            {% endif %}
+                        {% endif %}
+                    </p>
                     <div class="flex justify-between items-center text-sm text-gray-500">
-                        <span>by {{ model.owner.username }}</span>
+                        <span>by {{ model.user.username }}</span>
                         <span>{{ model.downloads }} downloads</span>
                     </div>
                     <div class="mt-4">
@@ -112,6 +132,36 @@
         </div>
     </div>
 </section>
+
+<script>
+const loadedRecentViewers = new Set();
+
+function loadRecentModel(modelId) {
+    if (loadedRecentViewers.has(modelId)) return;
+    
+    loadedRecentViewers.add(modelId);
+    const container = document.getElementById(`viewer-recent-${modelId}`);
+    
+    try {
+        createModelViewer(`viewer-recent-${modelId}`, modelId, {
+            width: container.clientWidth,
+            height: container.clientHeight
+        });
+    } catch (error) {
+        console.error('Failed to load recent model:', error);
+        container.innerHTML = '<div class="viewer-error"><div class="text-2xl">⚠️</div><div class="text-xs">Preview unavailable</div></div>';
+    }
+}
+
+// Auto-load first recent model on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const recentViewers = document.querySelectorAll('[id^="viewer-recent-"]');
+    if (recentViewers.length > 0) {
+        const firstModelId = recentViewers[0].id.replace('viewer-recent-', '');
+        setTimeout(() => loadRecentModel(firstModelId), 1000);
+    }
+});
+</script>
 {% endif %}
 
 <!-- API Demo Section -->
