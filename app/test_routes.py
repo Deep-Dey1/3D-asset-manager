@@ -14,33 +14,16 @@ def test_database():
         # Test basic connection
         result = db.session.execute(text("SELECT 1 as test")).fetchone()
         
-        # Test table existence
-        tables_result = db.session.execute(text("""
-            SELECT table_name 
-            FROM information_schema.tables 
-            WHERE table_schema = 'public'
-        """)).fetchall()
-        
-        tables = [row[0] for row in tables_result] if tables_result else []
-        
-        # Test model queries if tables exist
-        user_count = 0
-        model_count = 0
-        
-        if 'users' in tables:
-            user_count = db.session.execute(text("SELECT COUNT(*) FROM users")).scalar()
-        
-        if 'model3d' in tables:
-            model_count = db.session.execute(text("SELECT COUNT(*) FROM model3d")).scalar()
+        # Test simple count queries
+        user_count = db.session.execute(text("SELECT COUNT(*) FROM users")).scalar() or 0
+        model_count = db.session.execute(text("SELECT COUNT(*) FROM model3d")).scalar() or 0
         
         return jsonify({
             'status': 'success',
             'connection_test': result[0] if result else None,
-            'tables': tables,
             'user_count': user_count,
             'model_count': model_count,
-            'database_url': current_app.config.get('SQLALCHEMY_DATABASE_URI', 'Not set')[:50] + '...',
-            'env_database_url': os.environ.get('DATABASE_URL', 'Not set')[:50] + '...'
+            'database_url': 'Connected to PostgreSQL'
         })
         
     except Exception as e:
