@@ -125,9 +125,32 @@ Visit `http://localhost:5000` to access the application.
 - `GET /api/models` - List all public models
 - `POST /api/upload` - Upload new 3D model (requires authentication)
 - `GET /api/download/{id}` - Download model file
+- `GET /api/view/{id}` - View/preview model file (for 3D viewer)
 - `GET /api/model/{id}` - Get model details
 - `DELETE /api/model/{id}` - Delete model (owner only)
 - `GET /api/stats` - Platform statistics
+
+### File Persistence & Deployment Handling
+
+⚠️ **Important**: On platforms like Railway, the file system is ephemeral. This means uploaded files are lost when the container restarts, but database records remain.
+
+**File Persistence Solution Included**:
+- Models with missing files are automatically detected
+- Visual indicators show when files are unavailable
+- Users see helpful error messages instead of broken previews
+- Re-upload functionality is provided for model owners
+
+**Post-Deployment Commands**:
+```bash
+# Run database migration (adds file_missing tracking)
+python migrate_db.py
+
+# Check file integrity after deployment
+python check_files.py check
+
+# List models with missing files
+python check_files.py list
+```
 
 ### API Usage Examples
 

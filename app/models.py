@@ -43,6 +43,7 @@ class Model3D(db.Model):
     upload_date = db.Column(db.DateTime, default=datetime.utcnow)
     downloads = db.Column(db.Integer, default=0)
     is_public = db.Column(db.Boolean, default=True)
+    file_missing = db.Column(db.Boolean, default=False)  # Track missing files after deployment
     
     # Foreign key
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -70,6 +71,7 @@ class Model3D(db.Model):
             'upload_date': self.upload_date.isoformat() if self.upload_date else None,
             'downloads': self.downloads,
             'is_public': self.is_public,
+            'file_missing': self.file_missing,
             'user': {
                 'id': self.user.id,
                 'username': self.user.username,
