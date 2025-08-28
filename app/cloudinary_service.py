@@ -4,9 +4,16 @@ Cloudinary service for handling 3D model file uploads and management
 import os
 import tempfile
 from typing import Dict, Optional, Tuple
-import cloudinary
-import cloudinary.uploader
-import cloudinary.api
+
+try:
+    import cloudinary
+    import cloudinary.uploader
+    import cloudinary.api
+    CLOUDINARY_AVAILABLE = True
+except ImportError:
+    print("Warning: Cloudinary package not installed. Install with: pip install cloudinary")
+    CLOUDINARY_AVAILABLE = False
+
 from werkzeug.utils import secure_filename
 from flask import current_app
 
@@ -15,13 +22,21 @@ class CloudinaryService:
     
     def __init__(self):
         """Initialize Cloudinary configuration"""
-        # Configure Cloudinary (done in config.py but ensuring it's set)
-        cloudinary.config(
-            cloud_name=current_app.config.get('CLOUDINARY_CLOUD_NAME', 'dhktf9m25'),
-            api_key=current_app.config.get('CLOUDINARY_API_KEY', '159532712964974'),
-            api_secret=current_app.config.get('CLOUDINARY_API_SECRET', 'DssDwgjlFynfrU2V8sFZzt3ixF8'),
-            secure=True
-        )
+        if not CLOUDINARY_AVAILABLE:
+            print("Cloudinary not available - using fallback mode")
+            return
+            
+        try:
+            # Configure Cloudinary (done in config.py but ensuring it's set)
+            cloudinary.config(
+                cloud_name=current_app.config.get('CLOUDINARY_CLOUD_NAME', 'dhktf9m25'),
+                api_key=current_app.config.get('CLOUDINARY_API_KEY', '159532712964974'),
+                api_secret=current_app.config.get('CLOUDINARY_API_SECRET', 'DssDwgjlFynfrU2V8sFZzt3ixF8'),
+                secure=True
+            )
+            print("Cloudinary configured successfully")
+        except Exception as e:
+            print(f"Cloudinary configuration error: {e}")
     
     def upload_model(self, file_obj, original_filename: str, model_id: int) -> Dict:
         """
@@ -35,6 +50,12 @@ class CloudinaryService:
         Returns:
             Dict with upload result including public_id and secure_url
         """
+        if not CLOUDINARY_AVAILABLE:
+            return {
+                'success': False,
+                'error': 'Cloudinary not available - package not installed'
+            }
+            
         try:
             # Create a secure filename
             secure_name = secure_filename(original_filename)
@@ -130,6 +151,9 @@ class CloudinaryService:
         Returns:
             True if exists, False otherwise
         """
+        if not CLOUDINARY_AVAILABLE:
+            return False
+            
         try:
             cloudinary.api.resource(public_id, resource_type="raw")
             return True
